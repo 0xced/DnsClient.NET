@@ -951,6 +951,7 @@ namespace DnsClient
                             settings.Retries + 1);
                     }
 
+                    CancellationTokenSource cts = null;
                     try
                     {
                         cancellationToken.ThrowIfCancellationRequested();
@@ -961,7 +962,7 @@ namespace DnsClient
                         if (settings.Timeout != System.Threading.Timeout.InfiniteTimeSpan
                             || (cancellationToken != CancellationToken.None && cancellationToken.CanBeCanceled))
                         {
-                            var cts = new CancellationTokenSource(settings.Timeout);
+                            cts = new CancellationTokenSource(settings.Timeout);
                             CancellationTokenSource linkedCts = null;
                             if (cancellationToken != CancellationToken.None)
                             {
@@ -1092,7 +1093,7 @@ namespace DnsClient
                     catch (Exception ex) when (
                         ex is TimeoutException timeoutEx
                         || DnsMessageHandler.IsTransientException(ex)
-                        || ex is OperationCanceledException)
+                        || cts?.IsCancellationRequested == true)
                     {
                         if (!cancellationToken.IsCancellationRequested)
                         {
@@ -1126,6 +1127,11 @@ namespace DnsClient
                     catch (InvalidOperationException)
                     {
                         // Don't retry invalid ops exceptions. This should not happen anyways unless we messed up somewhere.
+                        throw;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Don't retry cancellation exceptions. They should always bubble up as is, without being wrapped.
                         throw;
                     }
                     // Any other exception will not be retried on the same server. e.g. Socket Exceptions

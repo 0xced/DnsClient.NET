@@ -502,13 +502,12 @@ namespace DnsClient.Tests
                     });
 
                 // should hit the cancellation timeout, not the 1sec timeout
-                using var tokenSource = new CancellationTokenSource(200);
+                using var tokenSource = new CancellationTokenSource(s_timeout);
 
                 var token = tokenSource.Token;
 
-                var ex = await Assert.ThrowsAnyAsync<DnsResponseException>(() => client.QueryAsync("lala.com", QueryType.A, cancellationToken: token));
-                Assert.Equal(DnsResponseCode.ConnectionTimeout, ex.Code);
-                Assert.IsType<OperationCanceledException>(ex.InnerException);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.QueryAsync("lala.com", QueryType.A, cancellationToken: token));
+                Assert.True(token.IsCancellationRequested);
             }
 
             [Fact]
@@ -527,8 +526,8 @@ namespace DnsClient.Tests
 
                 var token = tokenSource.Token;
 
-                var ex = await Assert.ThrowsAnyAsync<DnsResponseException>(() => client.QueryAsync("lala.com", QueryType.A, cancellationToken: token));
-                Assert.NotNull(ex.InnerException);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.QueryAsync("lala.com", QueryType.A, cancellationToken: token));
+                Assert.True(token.IsCancellationRequested);
             }
 
             [Fact]
@@ -542,13 +541,13 @@ namespace DnsClient.Tests
                         UseTcpFallback = false
                     });
 
-                // should hit the cancellation timeout, not the 1sec timeout
+                // should hit the cancellation timeout, not the infinite timeout
                 using var tokenSource = new CancellationTokenSource(s_timeout);
 
                 var token = tokenSource.Token;
 
-                var ex = await Assert.ThrowsAnyAsync<DnsResponseException>(() => client.QueryAsync("lala.com", QueryType.A, cancellationToken: token));
-                Assert.NotNull(ex.InnerException);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.QueryAsync("lala.com", QueryType.A, cancellationToken: token));
+                Assert.True(token.IsCancellationRequested);
             }
 
             [Fact]
@@ -562,13 +561,13 @@ namespace DnsClient.Tests
                         UseTcpOnly = true
                     });
 
-                // should hit the cancellation timeout, not the 1sec timeout
+                // should hit the cancellation timeout, not the infinite timeout
                 using var tokenSource = new CancellationTokenSource(s_timeout);
 
                 var token = tokenSource.Token;
 
-                var ex = await Assert.ThrowsAnyAsync<DnsResponseException>(() => client.QueryAsync("lala.com", QueryType.A, cancellationToken: token));
-                Assert.NotNull(ex.InnerException);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.QueryAsync("lala.com", QueryType.A, cancellationToken: token));
+                Assert.True(token.IsCancellationRequested);
             }
         }
 
@@ -586,9 +585,8 @@ namespace DnsClient.Tests
             Task act() => client.QueryAsync("lala.com", QueryType.A, cancellationToken: token);
             tokenSource.Cancel();
 
-            var ex = await Assert.ThrowsAnyAsync<DnsResponseException>(act);
-
-            Assert.NotNull(ex.InnerException);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(act);
+            Assert.True(token.IsCancellationRequested);
         }
 
         [Fact]
@@ -605,9 +603,8 @@ namespace DnsClient.Tests
             Task act() => client.QueryAsync("lala.com", QueryType.A, cancellationToken: token);
             tokenSource.Cancel();
 
-            var ex = await Assert.ThrowsAnyAsync<DnsResponseException>(act);
-
-            Assert.NotNull(ex.InnerException);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(act);
+            Assert.True(token.IsCancellationRequested);
         }
 
         [Fact]
